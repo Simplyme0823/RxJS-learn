@@ -1,6 +1,8 @@
 import { Observable, Subscriber } from 'rxjs';
 import * as four from './four'
 import * as five from './five'
+import * as six from './six'
+
 const observable = new Observable(subscriber => {
   subscriber.next(1);
   subscriber.next(2);
@@ -74,34 +76,37 @@ console.log("深入简出RxJS第五章：合并数据流------------------------
  * (2) [2, "b"]
  * (2) [3, "c"]
  */
+/*
 five.zipped$.subscribe(
   console.log,
   null,
   () => console.log('complete')
 )
-
+*/
 /**
  * (2) [0, 1]
  * (2) [1, 2]
  * (2) [2, 3]
  */
+/*
 five.zipped_$.subscribe(
   console.log,
   null,
   () => console.log('complete')
 )
-
+*/
 /**
  * (2) [1, 1, 0]
  * (2) [2, 2, 1]
  * (2) [3, 3, 2]
  */
+/*
 five.ziptest$.subscribe(
   console.log,
   null,
   () => console.log('complete')
 )
-
+*/
 /**
  * 间隔500ms
  * (2) [5, 5]
@@ -113,6 +118,7 @@ five.ziptest$.subscribe(
  * (2) [8, 8]
  * (2) [9, 8]
  */
+/*
 five.combinelatest$.subscribe(
   console.log,
   null,
@@ -130,12 +136,20 @@ five.zipnever$.subscribe(
   null,
   () => console.log('complete')
 )
-
+*/
 /**
  * 因为上游的数据源没有终结，zipAll会一直等待
  */
+/*
 five.zipAll$.subscribe(
   value=>console.log(value,'zipAll$'),
   null,
   () => console.log('complete')
+)
+
+*/
+six.isEmpty$.subscribe(
+  (value:any)=>console.log(value,'isEmpty$'),
+  null,
+  (value:any) => console.log(value)
 )
