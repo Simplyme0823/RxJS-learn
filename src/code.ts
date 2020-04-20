@@ -2,7 +2,7 @@ import { Observable, Subscriber } from 'rxjs';
 import * as four from './four'
 import * as five from './five'
 import * as six from './six'
-
+import * as seven from './seven'
 const observable = new Observable(subscriber => {
   subscriber.next(1);
   subscriber.next(2);
@@ -152,4 +152,16 @@ six.isEmpty$.subscribe(
   (value:any)=>console.log(value,'isEmpty$'),
   null,
   (value:any) => console.log(value)
+)
+
+seven.first$.subscribe(
+  (value:any)=>console.log(value,'first$'),
+  null,
+  () => console.log('compelete')
+)
+
+seven.skipUntil.subscribe(
+  (value:any)=>console.log(value,'skipWhile$'),
+  null,
+  () => console.log('compelete')
 )
