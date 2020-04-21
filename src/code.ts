@@ -147,7 +147,7 @@ five.zipAll$.subscribe(
   () => console.log('complete')
 )
 
-*/
+*//*
 six.isEmpty$.subscribe(
   (value:any)=>console.log(value,'isEmpty$'),
   null,
@@ -165,3 +165,16 @@ seven.skipUntil.subscribe(
   null,
   () => console.log('compelete')
 )
+*/
+seven.sampleTime$.subscribe(
+  (value:any)=>console.log(value,'sampleTime$'),
+  null,
+  () => console.log('compelete')
+)
+
+//seven.result.subscribe(x => console.log(x));
+
+
+seven.distinctUntilChanged$.subscribe(x => console.log(x,'distinctUntilChanged$'));
+
+seven.single$.subscribe(x => console.log(x,'single$'));

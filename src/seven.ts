@@ -1,10 +1,10 @@
-import { Observable,timer } from 'rxjs';
+import { Observable, timer } from 'rxjs';
 import 'rxjs/add/observable/range'
 import 'rxjs/operator/max'
 import 'rxjs/operator/findIndex'
 import 'rxjs/operator/find'
 import 'rxjs/operator/filter'
-
+import 'rxjs/add/observable/fromEvent'
 import 'rxjs/add/operator/isEmpty'
 import 'rxjs/add/operator/filter'
 import 'rxjs/add/operator/first'
@@ -24,8 +24,16 @@ import 'rxjs/add/operator/throttleTime';
 import 'rxjs/add/operator/debounceTime';
 import 'rxjs/add/operator/throttle';
 import 'rxjs/add/operator/debounce';
-
-
+import 'rxjs/add/operator/audit';
+import 'rxjs/add/operator/auditTime';
+import 'rxjs/add/operator/sample';
+import 'rxjs/add/operator/sampleTime';
+import 'rxjs/add/operator/mapTo';
+import 'rxjs/add/operator/distinct';
+import 'rxjs/add/operator/distinctUntilChanged';
+import 'rxjs/add/operator/distinctUntilKeyChanged';
+import 'rxjs/add/operator/elementAt';
+import 'rxjs/add/operator/single';
 //类似filter，只能做筛选
 const source$ = Observable.range(1, 5)
 source$.filter(x => x % 2 === 0)
@@ -87,7 +95,7 @@ const source5$ = Observable.interval(1000)
 
 //skipWhile
 //只要value => value%2 === 0 返回的是false 那就从这个数开始全部转手上有数据
-export const skipWhile = source5$.skipWhile(value => value%2 === 0)
+export const skipWhile = source5$.skipWhile(value => value % 2 === 0)
 
 //skipUntil,延迟启动上游函数
 const skipNotify = timer(10000)
@@ -98,21 +106,95 @@ export const skipUntil = source5$.skipUntil(skipNotify)
 
 //因此，需要处理，比如舍弃一些涌入的数据 此操作称为 有损回压控制 Lossy Backpressure Control
 
-// throttleTime 2000ms内的数据会被抛弃，注意刚计时器刚启动的时候吐出的数据不会被抛弃
+// throttleTime 上游吐出数据的时候开始计时，2000ms的计时器中只有第一个吐出的数据会传递给下游，其他的都过滤掉了
+//等计时器的时间到了之后，上游又有数据到达，才会重新计时
 source5$.throttleTime(2000)
 
-// debounceTime 上一次吐出时间开始计时，如果与下一次吐出数据的时间间隔小于2000 那么重新计时，数据就不会传给下游
-// 时间间隔大于小于2000ms 就
+// debounceTime 上游吐出数据的时候开始计时，两个相邻数据产生的事件如果小于2000ms,那么第一个数据过滤掉，然后计时器
+// 重置，再看第二个第三个数据的吐出时间差；当两个相邻数据 吐出时间大于2000ms时候，这两个数据才会传递到下游，
 source5$.debounceTime(2000)
 
 
-//节流是大量数据产生的时候 只处理少部分
+//节流是大量数据产生的时候 只处理第一个
 //防抖是大量数据产生的时候 完全不处理
 
 // throttle 用数据流控制数据流
-// throttle的durationSelector参数为一个函数，可以根据上游数据做更灵活的操作，设定不同的节流时间
+// throttle的durationSelector参数为一个函数，可以根据上游数据做更灵活的操作，根据不同的上游数据设定不同的节流时间
 // 0 3 6 9 吐出之后节流时间为2s 其余为1s
-source5$.throttle((value:any)=>Observable.timer(value % 3 === 0 ? 2000 : 1000))
+source5$.throttle((value: any) => Observable.timer(value % 3 === 0 ? 2000 : 1000))
 
-// debounce  防抖函数根据上游值改变了防抖时间，改变值的时候 会打断计时器，
-source5$.debounce((value:any)=>Observable.timer(value % 3 === 0 ? 2000 : 1000))
+
+// debounce  如果当前的计时周期内有新的值到达，那么会计时器会被打断，计时周期从新值到达的时间点开始算
+// 本质上就是时间差
+source5$.debounce((value: any) => Observable.timer(value % 3 === 0 ? 2000 : 1000))
+
+
+//auditTime和audit
+//与throttle类似，不同的是throttle是把周期内的第一个数据传递给下游，而audit是把周期内的最后一个数据传递给下游
+//一定是周期结束后再吐出, 计算周期是上一轮周期结束后 新值到来再开启
+export const auditTime$ = source5$.auditTime(2000) //1, 3, 5,....
+
+const source6$ = Observable.interval(500).take(2).mapTo('A')
+    .concat(Observable.interval(5000).take(3).mapTo('B'))
+    .concat(Observable.interval(500).take(3).mapTo('C'))
+
+const durationSelector = (value: any) => Observable.timer(800)
+
+export const audit$ = source6$.audit(durationSelector)
+
+//sampleTime和sample 采样操作，无论上游数据如何变化，定时器的周期都是固定的，会把周期内的【最后一个】数据传递给下游
+//如果sampleTime发现一个时间块内上游没有产生数据，那么时间快结尾也不会传递数据给下游
+//sample的计时周期开始时间与上游数据无关
+
+export const sampleTime$ = source6$.sampleTime(500)
+
+//实例，利用click时间来改变采样频率 从而实现在div中显示逝去的时间
+/*
+const notify$ = Observable.fromEvent(document.querySelector('#sample'), 'click')
+const tick$ = Observable.timer(0, 10).map(x => x * 10) //上游数据，模拟订阅Observer以后逝去的时间
+const sample_$ = tick$.sample(notify$)//通过click改变采样的评率，获取两次点击之间，最后一次点击的上游数据
+
+var seconds = Observable.interval(1000);
+var clicks = Observable.fromEvent(document, 'click')
+export const result = seconds.sample(clicks);
+*/
+
+// 有这么一种状况，我们只想处理一次上游出现过的数据如0,0,0,1,1,2,2的上游数据，我们只想处理 0， 1 2
+
+// distinct
+const duplicate$ = Observable.of(0, 0, 0, 1, 1, 1, 2, 2, 2)
+const distinct$ = duplicate$.distinct()
+//对于基础对象，使用 === 比较，对于引用对象，提供一个keySelector函数，指定属性
+const duplicateObj$ = Observable.of({ name: "rxjs", value: "rxjs" }, { name: "rxjs", value: "rxjs" })
+const distinctObj$ = duplicateObj$.distinct(x => x.name, Observable.interval(500))
+
+//注意点，distinct()会保留数据集合，那么就会造成内存泄漏,考虑到这个情况，
+//会提供flush参数 如上所以，产生的值是什么不重要，重要的是时间就是每500ms清空一次集合
+//因此传递给下游的值是【一段时间内】的唯一值
+
+
+//2. distinctUntilChanged 与上述不同，这个函数是每次拿当前值和上一次的值比较，因此不会有内存泄漏问题
+const source7$ = Observable.of(
+    { name: 'RxJS', version: 'v4' },
+    { name: 'React', version: 'v15' },
+    { name: 'React', version: 'v16' },
+    { name: 'RxJS', version: 'v5' })
+const compare = (a:any, b:any) => a.name===b.name
+
+//书中说会吐出所有的数据,是错误的， 只会吐出第1 2 4 个数据
+export const distinctUntilChanged$ = source7$.distinctUntilChanged(compare)
+
+///distinctUntilKeyChanged, 指定【一个】属性比较，不能指定多个
+const distinctUntilKeyChanged$ = source7$.distinctUntilKeyChanged('name')
+
+//剩下的其他过滤符
+//1. ignoreElements 忽略所有元素，只关心error和competition事件
+
+//2. elementAt 把上游元素当成数组， 第一个参数为找到index为第一个参数的元素，第二个参数为指定找不到元素时的返回值
+
+//3. 检查上游是否只有一个满足对应条件的数据，是的话就传递这个数据，否就抛出异常
+
+const source8$ = Observable.interval(1000)
+export const single$ = source8$.single(x=>x%2===0)
+//上述结果会报错，因为递增到2的时候 不是唯一了
+//Uncaught Sequence contains more than one element
