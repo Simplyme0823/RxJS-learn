@@ -1,9 +1,10 @@
-import { Observable, Subscriber } from 'rxjs';
-import * as four from './four'
-import * as five from './five'
-import * as six from './six'
-import * as seven from './seven'
-const observable = new Observable(subscriber => {
+import { Observable, Subscriber } from "rxjs";
+import * as four from "./four";
+import * as five from "./five";
+import * as six from "./six";
+import * as seven from "./seven";
+import * as eight from "./eight";
+const observable = new Observable((subscriber) => {
   subscriber.next(1);
   subscriber.next(2);
   subscriber.next(3);
@@ -17,41 +18,44 @@ const observable = new Observable(subscriber => {
  * 内部有_isScalar:flase
  * _subscribe:为传递的函数
  */
-console.log(observable)
+console.log(observable);
 
-
-console.log('just before subscribe');
+console.log("just before subscribe");
 const sub = observable.subscribe({
-  next(x) { console.log('got value ' + x); },
-  error(err) { console.error('something wrong occurred: ' + err); },
-  complete() { console.log('done'); }
+  next(x) {
+    console.log("got value " + x);
+  },
+  error(err) {
+    console.error("something wrong occurred: " + err);
+  },
+  complete() {
+    console.log("done");
+  },
 });
-console.log('just after subscribe');
-console.log('This is sub: ', sub)
-
+console.log("just after subscribe");
+console.log("This is sub: ", sub);
 
 /**
  * 和promise很像,return的new Promise的时候必须要调用new Promise实例的resolve和reject方法
  * 在这里则是必须要调用observer的next, error, complete方法
- * @param fn 
+ * @param fn
  */
 function map(fn: Function) {
-  return new Observable(observer => {
+  return new Observable((observer) => {
     //这里的this是调用map方法的observer对象
     //就像水龙头一样，开关在上游，就连停止订阅也是调用上游的Subscribe实例的unsubscribe方法
     const sub = this.subscribe({
       next: (value: any) => observer.next(fn(value)),
       error: (err: any) => observer.error(err),
-      complete: () => observer.complete()
-    })
+      complete: () => observer.complete(),
+    });
     return {
-      unsubscribe: () => sub.unsubscribe()
-    }
-  })
+      unsubscribe: () => sub.unsubscribe(),
+    };
+  });
 }
 
-
-console.log("深入简出RxJS第四章：创建数据流--------------------------------")
+console.log("深入简出RxJS第四章：创建数据流--------------------------------");
 /*four.source$.subscribe({ next: value => { console.log(value) } })
 
 four.generate$.subscribe({ next: value => { console.log(value, 'generate$') } })
@@ -64,7 +68,27 @@ four.promise$.subscribe(
 
 four.repeated$.subscribe({ next: value => { console.log(value, 'repeated$') } })
 */
-console.log("深入简出RxJS第五章：合并数据流--------------------------------")
+console.log(
+  "深入简出RxJS第五章：合并数据流--------------------------------"
+); /*
+six.isEmpty$.subscribe(
+  (value:any)=>console.log(value,'isEmpty$'),
+  null,
+  (value:any) => console.log(value)
+)
+
+seven.first$.subscribe(
+  (value:any)=>console.log(value,'first$'),
+  null,
+  () => console.log('compelete')
+)
+
+seven.skipUntil.subscribe(
+  (value:any)=>console.log(value,'skipWhile$'),
+  null,
+  () => console.log('compelete')
+)
+*/
 /*five.merged$.subscribe(
   console.log,
   null,
@@ -147,34 +171,34 @@ five.zipAll$.subscribe(
   () => console.log('complete')
 )
 
-*//*
-six.isEmpty$.subscribe(
-  (value:any)=>console.log(value,'isEmpty$'),
-  null,
-  (value:any) => console.log(value)
-)
-
-seven.first$.subscribe(
-  (value:any)=>console.log(value,'first$'),
-  null,
-  () => console.log('compelete')
-)
-
-seven.skipUntil.subscribe(
-  (value:any)=>console.log(value,'skipWhile$'),
-  null,
-  () => console.log('compelete')
-)
 */
-seven.sampleTime$.subscribe(
-  (value:any)=>console.log(value,'sampleTime$'),
+
+/*seven.sampleTime$.subscribe(
+  (value: any) => console.log(value, "sampleTime$"),
   null,
-  () => console.log('compelete')
-)
+  () => console.log("compelete")
+);
 
 //seven.result.subscribe(x => console.log(x));
 
+seven.distinctUntilChanged$.subscribe((x) =>
+  console.log(x, "distinctUntilChanged$")
+);
 
-seven.distinctUntilChanged$.subscribe(x => console.log(x,'distinctUntilChanged$'));
+seven.single$.subscribe((x) => console.log(x, "single$"));
+*/
 
-seven.single$.subscribe(x => console.log(x,'single$'));
+// eight.result$14.subscribe(
+//   (x) => console.log(x),
+//   null,
+//   () => console.log("complete")
+// );
+
+interface position {
+  x: number;
+  y: number;
+}
+eight.drag$.subscribe((event: position) => {
+  eight.box.style.left = event.x + "px";
+  eight.box.style.top = event.y + "px";
+});
