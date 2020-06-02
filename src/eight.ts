@@ -26,6 +26,11 @@ import "rxjs/add/operator/exhaustMap";
 import "rxjs/add/operator/switchMap";
 import "rxjs/add/operator/merge";
 import "rxjs/add/operator/takeUntil";
+import "rxjs/add/operator/concatMapTo";
+import "rxjs/add/operator/mergeMapTo";
+import "rxjs/add/operator/switchMapTo";
+import "rxjs/add/operator/groupBy";
+import "rxjs/add/operator/partition";
 
 const source$ = Observable.of(3, 1, 4);
 
@@ -217,13 +222,17 @@ box.style.position = "relative";
 box.style.height = "200px";
 box.style.border = "1px solid red";
 document.body.appendChild(box);
+
 //export const box = document.querySelector("#box") as HTMLDivElement;
+
 const mouseDown$ = Observable.fromEvent(box, "mousedown");
 const mouseUp$ = Observable.fromEvent(box, "mouseup");
 const mouseOut$ = Observable.fromEvent(box, "mouseout");
 const mouseMove$ = Observable.fromEvent(box, "mousemove");
 
+//定位细节不够，但是功能完全实现
 export const drag$ = mouseDown$.concatMap((startEvent: MouseEvent) => {
+  console.log(startEvent.target);
   const initialLeft = box.offsetLeft;
   const initialTop = box.offsetTop;
   const stop$ = mouseUp$.merge(mouseOut$);
@@ -234,3 +243,115 @@ export const drag$ = mouseDown$.concatMap((startEvent: MouseEvent) => {
     };
   });
 });
+
+// mergeMap 适合axjs请求，缺点是每一个上游的数据都会触发ajax并把结果传递给下游
+
+//场景：连续发送请求 而第二次的请求晚于第一次的请求 会造成数据混乱
+const source$8 = Observable.interval(200).take(2);
+
+const project$ = (value: number) => {
+  console.log(value, "value"); //0, 1 上流传入的数据
+  return Observable.interval(100).take(5); //周期500ms
+};
+
+export const result$15 = source$8.mergeMap(project$);
+
+/*const sendButton = document.querySelector("#send");
+Observable.fromEvent(sendButton, "click")
+  .mergeMap(() => {
+    return Observable.ajax(apiUrl);
+  })
+  .subscribe((result) => {
+    //处理结果
+  });
+*/
+
+//switchMap  每次上游数据产生就会触发switchMap产生一个内部Observale对象
+// 重要的是后一个产生的Observale对象的优先级更高
+
+export const result$16 = source$8.switchMap(project$);
+// (0) / (0) (1) (2) (3) (4) 第一个内部对象被打断
+// 对于axjs是 第一个axjs没有返回 第二个发起了就会打断第一个
+
+//exhaustMap 与swithMap相反，第一个产生的内部Observale对象优先级更高
+//exhaustMap 在就的数据源订阅后产生的【内部对象终结之前】不会去订阅新的数据源
+
+// MapTo系列操作符
+// concatMapTo
+const source$9 = Observable.interval(200);
+export const result$17 = source$9.concatMapTo(Observable.interval(100).take(5));
+// 0,1,2,3,4 repeat
+
+export const result$18 = source$9.switchMapTo(Observable.interval(100).take(5));
+// 0 repeat 每次内部产生的对象都会打断上一个对象 上游周期为200ms 返回一个100ms周期的Observale对象 在200ms周期的时候 吐出0，1而1的时候被打断了 只剩下0
+//如果 source$9改成1000ms 那么就会是0,1,2,3,,4 repeat
+
+export const result$19 = source$9.mergeMapTo(Observable.interval(100).take(5));
+//“打平”数据 ”分组“   弹珠图演示即可
+// code.ts:214 0  0
+
+// code.ts:214 1  0
+
+// code.ts:214 0  1
+// code.ts:214 2  0
+
+// code.ts:214 1  1
+// code.ts:214 3  0
+
+// code.ts:214 2  1
+// code.ts:214 4  0
+// code.ts:214 0  2
+
+// code.ts:214 3  1
+// code.ts:214 1  2
+
+// code.ts:214 4  1
+// code.ts:214 0  3
+// code.ts:214 2  2
+
+/** 数据分组
+ *  groupby
+ *  partition
+ */
+
+// groupBy 输出的是一个高阶Observale对象
+const intervalStream$ = Observable.interval(1000);
+export const groupByStream$ = intervalStream$.groupBy((x) => x % 2);
+//根据传入的函数处理上游数据 根据处理的结果决定内部有几个Observale对象
+
+//GroupedObservable key = 1 数据的集合
+//GroupedObservable key = 0 数据的集合
+
+//与window的区别 window的数据集合是连续地收集的
+// groupBy的数据集合 可以是交叉收集 因为是根据key值来划分group
+
+//应用 dom事件的委托应用
+const click$ = Observable.fromEvent(document, "click");
+
+const groupByClass$ = click$.groupBy((event: MouseEvent) => {
+  const target = event.target as Element;
+  return target.className;
+});
+
+const fooEventHandler = () => {};
+const barEventHandler = () => {};
+
+groupByClass$
+  .filter((value) => value.key === "foo")
+  .mergeAll()
+  .subscribe(fooEventHandler);
+
+groupByClass$
+  .filter((value) => value.key === "bar")
+  //高阶对象编程低阶对象
+  .mergeAll()
+  .subscribe(barEventHandler);
+
+// 用groupBy是杀鸡用牛刀，简单的分类其实并不用产生一个高阶的对象
+// partition返回一个数组， 数组第一个元素是满足条件的Observale对象，第二个是不满足的
+const source$10 = Observable.timer(0, 100);
+
+//es6的解构语法
+const [even$, odd$] = source$.partition((x) => x % 2 === 0);
+even$.subscribe();
+odd$.subscribe();

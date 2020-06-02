@@ -194,11 +194,25 @@ seven.single$.subscribe((x) => console.log(x, "single$"));
 //   () => console.log("complete")
 // );
 
-interface position {
-  x: number;
-  y: number;
-}
-eight.drag$.subscribe((event: position) => {
-  eight.box.style.left = event.x + "px";
-  eight.box.style.top = event.y + "px";
-});
+// interface position {
+//   x: number;
+//   y: number;
+// }
+// eight.drag$.subscribe((event: position) => {
+//   eight.box.style.left = event.x + "px";
+//   eight.box.style.top = event.y + "px";
+// });
+
+// eight.result$15.subscribe(
+//   (x) => console.log(x),
+//   null,
+//   () => console.log("complete")
+// );
+// (0) (1) (0,2) (1,3) (2,4) (3) (4)
+
+eight.groupByStream$.subscribe(
+  (x) => console.log(x),
+  null,
+  () => console.log("complete")
+);
+// (0) / (0) (1) (2) (3) (4)
