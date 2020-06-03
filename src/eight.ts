@@ -31,6 +31,10 @@ import "rxjs/add/operator/mergeMapTo";
 import "rxjs/add/operator/switchMapTo";
 import "rxjs/add/operator/groupBy";
 import "rxjs/add/operator/partition";
+import "rxjs/add/operator/partition";
+import "rxjs/add/operator/mergeAll";
+import "rxjs/add/operator/scan";
+import "rxjs/add/operator/mergeScan";
 
 const source$ = Observable.of(3, 1, 4);
 
@@ -316,7 +320,8 @@ export const result$19 = source$9.mergeMapTo(Observable.interval(100).take(5));
 
 // groupBy 输出的是一个高阶Observale对象
 const intervalStream$ = Observable.interval(1000);
-export const groupByStream$ = intervalStream$.groupBy((x) => x % 2);
+export const groupByStream$ = intervalStream$.groupBy((x) => x % 2).mergeAll();
+
 //根据传入的函数处理上游数据 根据处理的结果决定内部有几个Observale对象
 
 //GroupedObservable key = 1 数据的集合
@@ -325,6 +330,20 @@ export const groupByStream$ = intervalStream$.groupBy((x) => x % 2);
 //与window的区别 window的数据集合是连续地收集的
 // groupBy的数据集合 可以是交叉收集 因为是根据key值来划分group
 
+/** 使用mergeAll的时候报错了 要用pipe 管道操作符
+ * groupByStream$.subscribe((x) => {
+  if (x.key === 1) {
+    // 根据key值选择group
+    x.subscribe(
+      (x) => console.log(x),
+      null,
+      () => console.log("complete")
+    );
+  }
+});
+ */
+
+/*
 //应用 dom事件的委托应用
 const click$ = Observable.fromEvent(document, "click");
 
@@ -352,6 +371,54 @@ groupByClass$
 const source$10 = Observable.timer(0, 100);
 
 //es6的解构语法
-const [even$, odd$] = source$.partition((x) => x % 2 === 0);
+const [even$, odd$] = source$10.partition((x) => x % 2 === 0);
 even$.subscribe();
 odd$.subscribe();
+*/
+
+/**
+ * 通常情况下 上游数据之间是没有联系的
+ * 但是开发中肯定有上游之间相互依赖的情况
+ * 因此rxjs提供了操作符 sacn和mergeScan
+ */
+
+//累加 : scan是rxjs中少数可以维持状态的操作符，一般的操作符都是数据处理后直接传给下游
+// 而scan是会将数据保留在累计值中
+const source$11 = Observable.interval(100);
+export const result$20 = source$11.scan((accumulation, value) => {
+  return accumulation + value;
+});
+
+// code.ts:214 0
+// code.ts:214 1
+// code.ts:214 3
+// code.ts:214 6
+// code.ts:214 10
+
+/**
+ * mergeScan返回的是一个Observale对象而非数据
+ */
+
+export const result$21 = source$11.mergeScan((accumulation, value) => {
+  return Observable.of(accumulation + value);
+}, 0); //merge Scan 必须要有seed参数
+
+//当上游有数据传入的时候 会调用mergeScan的函数，并且订阅函数返回的Observale对象，
+// 而Observale对象会将自身的数据全部传送给下游，传送给下游的数据中的最后一个数据
+// 会作为accumulation
+
+// 注意 在数据传输的时候 mergeScan返回的这个对象还没有终结 下一个上游函数就来了
+// 那么merge操作会将 所有的Observale对象的【数据】传递给下游 造成了数据【交叉】的情况
+// 导致分不清哪个是最后一个函数， 那么 accumulation的参数很难确定了
+// 因此最好不要让mergeScan返回包含多个数据的Observale对象，不然很容易失控
+
+/**
+ * mergeScan应用：ajax请求的依赖关系：第一个ajax的请求结果决定第二个ajax请求的参数
+ */
+const result$22 = throttleScrolllToEnd$.mergeScan((allTweets, value) => {
+  return getTweets(
+    allTweets[allTweets.length - 1].map((newTeets) =>
+      allTweets.concat(newTeets)
+    )
+  );
+}, []);

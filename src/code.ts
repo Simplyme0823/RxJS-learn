@@ -210,7 +210,7 @@ seven.single$.subscribe((x) => console.log(x, "single$"));
 // );
 // (0) (1) (0,2) (1,3) (2,4) (3) (4)
 
-eight.groupByStream$.subscribe(
+eight.result$20.subscribe(
   (x) => console.log(x),
   null,
   () => console.log("complete")
