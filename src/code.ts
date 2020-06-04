@@ -1,9 +1,10 @@
 import { Observable, Subscriber } from "rxjs";
-import * as four from "./four";
-import * as five from "./five";
-import * as six from "./six";
-import * as seven from "./seven";
-import * as eight from "./eight";
+// import * as four from "./four";
+// import * as five from "./five";
+// import * as six from "./six";
+// import * as seven from "./seven";
+//import * as eight from "./eight";
+import * as nine from "./nine";
 const observable = new Observable((subscriber) => {
   subscriber.next(1);
   subscriber.next(2);
@@ -210,9 +211,8 @@ seven.single$.subscribe((x) => console.log(x, "single$"));
 // );
 // (0) (1) (0,2) (1,3) (2,4) (3) (4)
 
-eight.result$20.subscribe(
-  (x) => console.log(x),
+nine.retry$2.subscribe(
+  (x: any) => console.log(x),
   null,
   () => console.log("complete")
 );
-// (0) / (0) (1) (2) (3) (4)

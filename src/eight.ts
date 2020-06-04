@@ -415,10 +415,10 @@ export const result$21 = source$11.mergeScan((accumulation, value) => {
 /**
  * mergeScan应用：ajax请求的依赖关系：第一个ajax的请求结果决定第二个ajax请求的参数
  */
-const result$22 = throttleScrolllToEnd$.mergeScan((allTweets, value) => {
-  return getTweets(
-    allTweets[allTweets.length - 1].map((newTeets) =>
-      allTweets.concat(newTeets)
-    )
-  );
-}, []);
+// const result$22 = throttleScrolllToEnd$.mergeScan((allTweets, value) => {
+//   return getTweets(
+//     allTweets[allTweets.length - 1].map((newTeets) =>
+//       allTweets.concat(newTeets)
+//     )
+//   );
+// }, []);
