@@ -5,6 +5,7 @@ import { Observable, Subscriber } from "rxjs";
 // import * as seven from "./seven";
 //import * as eight from "./eight";
 import * as nine from "./nine";
+import "./ten";
 const observable = new Observable((subscriber) => {
   subscriber.next(1);
   subscriber.next(2);
@@ -211,8 +212,8 @@ seven.single$.subscribe((x) => console.log(x, "single$"));
 // );
 // (0) (1) (0,2) (1,3) (2,4) (3) (4)
 
-nine.retry$2.subscribe(
-  (x: any) => console.log(x),
-  null,
-  () => console.log("complete")
-);
+// nine.retry$2.subscribe(
+//   (x: any) => console.log(x),
+//   null,
+//   () => console.log("complete")
+// );
